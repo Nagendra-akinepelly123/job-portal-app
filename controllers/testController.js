@@ -1,4 +1,8 @@
 export const testpost = (req, res) => {
-  const { name } = req.body;
-  res.status(200).send(`Your name is ${name}`);
+  const { name: userName, role = " Web Developer" } = req.body;
+  res
+    .status(200)
+    .send(
+      `Hi!${userName} welcome to Job Portal , Recommend jobs for you ${role}`
+    );
 };
