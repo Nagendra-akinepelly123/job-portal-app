@@ -48,23 +48,29 @@ export const loginController = async (req, res, next) => {
   const { name, password } = req.body;
 
   if (!name || !password) {
-    next("Please fill All fields");
+    return next("Please fill All fields");
   }
 
-  const user = await User.findOne({ name }).select("+password");
+  const user = await User.findOne({ name });
   if (!user) {
-    next("Username or Password is invalid");
+    return next("Username or Password is invalid");
   }
 
-  const isMatch = user.comparePassword(password);
+  const isMatch = await user.comparePassword(password);
+
   if (!isMatch) {
-    next("Username or Password is invalid");
+    return next("Username or Password is invalid");
   }
+
   const token = user.createJWT();
   res.status(200).json({
     success: true,
     message: "Login Successfully",
-    user,
+    user: {
+      name: user.name,
+      email: user.email,
+      location: user.location,
+    },
     token,
   });
 };

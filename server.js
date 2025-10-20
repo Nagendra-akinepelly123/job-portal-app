@@ -9,6 +9,8 @@ import morgan from "morgan";
 import connectDB from "./config/db.js";
 import testRoute from "./routes/testRoutes.js";
 import authRoute from "./routes/authRoutes.js";
+import userRoute from "./routes/userRoutes.js";
+import jobRoute from "./routes/jobRoutes.js";
 import errorMiddleware from "./middlewares/errorMiddleware.js";
 
 //Dot Env Config
@@ -28,6 +30,8 @@ app.use(morgan("dev"));
 //routes
 app.use("/api/v1/test", testRoute);
 app.use("/api/v1/auth", authRoute);
+app.use("/api/v1/user", userRoute);
+app.use("/api/v1/job", jobRoute);
 
 //validation middlewares
 app.use(errorMiddleware);

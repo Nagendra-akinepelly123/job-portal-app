@@ -34,9 +34,18 @@ const userSchema = new Schema(
 );
 
 //middlewares
-userSchema.pre("save", async function () {
+userSchema.pre("save", async function (next) {
+  // 1. Correctly CALL the function and check a specific field.
+  // 2. The '!' negates the result: "If the 'password' field is NOT modified, then return."
+  if (!this.isModified("password")) {
+    return next(); // Exit early if password hasn't changed.
+  }
+
+  // This logic only runs if the password field IS modified (or the document is new).
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+
+  next(); // Pass control to the next middleware or save operation
 });
 
 //compare password

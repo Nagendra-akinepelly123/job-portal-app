@@ -22,7 +22,7 @@ const errorMiddleware = (err, req, res, next) => {
     )} filed has to be unique`;
   }
 
-  res.status(defaultErrors.statusCode).json({ message: defaultErrors.message });
+  res.status(defaultErrors.statusCode).send({ message: defaultErrors.message });
 };
 
 export default errorMiddleware;
