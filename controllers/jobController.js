@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Job from "../models/jobModel.js";
 import moment from "moment";
+import { format } from "morgan";
 
 //CREATE JOBS LOGIC
 export const createJobController = async (req, res, next) => {
@@ -66,7 +67,9 @@ export const deleteJobController = async (req, res, next) => {
 
   res.status(200).json({ message: "Success Job is deleted" });
 };
+// PIPELINES IMPLEMENTATION
 
+//JOB STATISTICS PIPELINE
 export const jobStatsController = async (req, res) => {
   const stats = await Job.aggregate([
     {
@@ -77,6 +80,7 @@ export const jobStatsController = async (req, res) => {
       },
     },
     {
+      //stage-2
       $group: {
         _id: "$status",
         count: { $sum: 1 },
@@ -128,5 +132,118 @@ export const jobStatsController = async (req, res) => {
     totalJobs: stats.length,
     defaultStats,
     monthlyApplications,
+  });
+};
+
+// //GET MONTHLY APPLICATIONS PIPELINE
+export const monthlyApplicationController = async (req, res) => {
+  const stats = await Job.aggregate([
+    //stage-1
+    {
+      $match: {
+        createdBy: new mongoose.Types.ObjectId(req.user.userId),
+      },
+    },
+    //stage-2
+    {
+      $group: {
+        _id: {
+          year: { $year: "$createdAt" },
+          month: { $month: "$createdAt" },
+        },
+        totalSubmitted: {
+          $sum: 1,
+        },
+        interviewCount: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "interview"] }, 1, 0],
+          },
+        },
+        rejectionCount: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "reject"] }, 1, 0],
+          },
+        },
+        pendingCount: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "pending"] }, 1, 0],
+          },
+        },
+      },
+    },
+    //stage-3
+    {
+      $sort: {
+        "_id.year": -1,
+        "_id.month": -1,
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+
+        totalSubmitted: 1,
+        interviewCount: 1,
+        rejectedCount: 1,
+        pendingCount: 1,
+        date: {
+          $dateToString: {
+            format: "%Y-%m",
+            date: {
+              $dateFromParts: {
+                year: "$_id.year",
+                month: "$_id.month",
+                day: 1,
+              },
+            },
+          },
+        },
+      },
+    },
+  ]);
+
+  res.status(200).json({
+    jobsApplied: stats.length,
+    stats,
+  });
+};
+
+// GET JOB STATUS OR POPULARITY PIPELINE
+export const jobPopularityController = async (req, res) => {
+  const jobStatus = await Job.aggregate([
+    //stage - 1
+    {
+      $group: {
+        _id: {
+          company: "$company",
+          position: "$position",
+        },
+        totalApplicants: {
+          $sum: 1,
+        },
+      },
+    },
+    //stage-2
+    {
+      $sort: {
+        totalApplicants: -1,
+      },
+    },
+    //stage-3
+    {
+      $limit: 5,
+    },
+    {
+      $project: {
+        _id: 0,
+        totalApplicants: 1,
+        company: "$_id.company",
+        position: "$_id.position",
+      },
+    },
+  ]);
+  res.status(200).json({
+    count: jobStatus.length,
+    jobStatus,
   });
 };
