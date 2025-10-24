@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 import Job from "../models/jobModel.js";
 import moment from "moment";
-import { format } from "morgan";
 
 //CREATE JOBS LOGIC
 export const createJobController = async (req, res, next) => {
@@ -18,11 +17,51 @@ export const createJobController = async (req, res, next) => {
 
 //GET JOBS LOGIC
 export const getAllJobsController = async (req, res, next) => {
-  const job = await Job.find({ createdBy: req.user.userId });
+  const { status, workType, search } = req.query;
+
+  const queryObject = {
+    createdBy: req.user.userId,
+  };
+
+  //filtering as per the status
+  if (status && status !== "all") {
+    queryObject.status = status;
+  }
+
+  //filtering as per the worktype
+  if (workType && workType !== "all") {
+    queryObject.workType = workType;
+  }
+
+  //filtering as per position
+  if (search) {
+    queryObject.position = { $regex: search, $options: "i" };
+  }
+
+  //PAGINATION
+  //Query created
+  let query = Job.find(queryObject);
+
+  //pagination variables
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 5;
+  const skip = (page - 1) * limit;
+
+  const totalJobs = await Job.countDocuments(queryObject);
+
+  //chaining modifiers
+  query = query.skip(skip).limit(limit);
+
+  //fetch result
+  const job = await query;
+  const noOfPages = Math.ceil(totalJobs / limit);
+
+  // const job = await Job.find({ createdBy: req.user.userId });
   res.status(200).send({
     success: true,
-    totalJobs: job.length,
+    totalJobs,
     job,
+    noOfPages,
   });
 };
 

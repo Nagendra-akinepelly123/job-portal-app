@@ -42,6 +42,6 @@ const PORT = process.env.PORT || 5000;
 //listen
 app.listen(5000, () => {
   console.log(
-    `Server running in ${process.env.DEV_MODE} mode at the port 5000`.bgBlack
+    `Server running in ${process.env.DEV_MODE} mode at the port 5000`.bgWhite
   );
 });
